@@ -56,6 +56,7 @@ import yaml
 # ===========================================================================
 
 SAMPLE_RATE = 16_000
+GEN_WORKERS = max(1, (os.cpu_count() or 2) - 2)  # parallel piper processes, leave 2 cores free
 N_MEL_BINS = 40
 CHUNK_SAMPLES = 160        # 10 ms at 16 kHz — pymicro_features fixed step
 STEP_MS = 10               # feature extraction step matching pymicro_features
@@ -479,15 +480,25 @@ def _generate_clips(phrases: list, voice_files: list, n_total: int,
     ]
     random.shuffle(combos)
 
+    # piper is a CPU subprocess per clip: run several in parallel (threads are
+    # fine, the work happens in the child processes).
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _one(i: int) -> bool:
+        phrase, voice, ls, ns, nw = combos[i % len(combos)]
+        return synthesize_clip(phrase, voice, out_dir / f"{uuid.uuid4().hex}.wav",
+                               ls, ns, nw)
+
     generated, idx = 0, 0
     pbar = tqdm(total=remaining, desc=desc, unit="clip")
-    while generated < remaining:
-        phrase, voice, ls, ns, nw = combos[idx % len(combos)]
-        idx += 1
-        out_path = out_dir / f"{uuid.uuid4().hex}.wav"
-        if synthesize_clip(phrase, voice, out_path, ls, ns, nw):
-            generated += 1
-            pbar.update(1)
+    with ThreadPoolExecutor(max_workers=GEN_WORKERS) as pool:
+        while generated < remaining:
+            batch = min(GEN_WORKERS * 8, remaining - generated)
+            for ok in pool.map(_one, range(idx, idx + batch)):
+                if ok:
+                    generated += 1
+                    pbar.update(1)
+            idx += batch
     pbar.close()
     log.info("  %s: %d new clips", desc, generated)
 
