@@ -40,3 +40,13 @@ record/
 
 # Local Claude Code config
 .claude/
+
+# microWakeWord source, cloned + installed editable by setup_mww.sh
+microWakeWord/
+
+# Run logs (e.g. train_uk.log)
+*.log
+
+# Evaluation inputs (real recordings) and generated reports
+eval_data/
+reports/
