@@ -1,0 +1,218 @@
+# =============================================================================
+# ru_jarvis.yaml — Production config for Russian "Джарвис" (microWakeWord)
+#
+# Usage:
+#   ./run_mww.sh --config ru_jarvis.yaml
+#   ./run_mww.sh --config ru_jarvis.yaml --phase train
+#   ./run_mww.sh --config ru_jarvis.yaml --phase export
+#
+# For a clean starting template, see example_ru_jarvis.yaml.
+# =============================================================================
+
+# Name used for output files: <model_name>_mww.tflite, <model_name>_mww.json,
+# and the training subdirectory training/output/<model_name>/.
+# Keep it short, lowercase, ASCII-safe (no spaces or special chars).
+model_name: ru_jarvis
+wake_word: "Джарвис"
+author: kelstar
+trained_languages: ["ru"]
+version: 2
+
+# Real recordings in record/ are used only for TESTING, not training.
+# Including them in training poisons positives with room-specific mic noise.
+train_with_recordings: false
+
+# The exact phrase(s) the model should activate on.
+# Adding punctuation variants (!, ?) creates TTS clips with different
+# intonation — rising for "?", emphatic for "!" — which improves recall
+# across natural speech patterns.
+target_phrases:
+  - Джарвис
+  - Джарвис!
+  - Джарвис?
+
+training:
+  # Number of positive TTS clips to generate for training / validation.
+  # More samples = better generalisation but longer TTS generation time.
+  # 50k is a solid default; 25k is minimum viable, 100k+ for production.
+  n_samples: 50000
+  n_samples_val: 10000
+
+# ---------------------------------------------------------------------------
+# Voices — Piper ONNX models from HuggingFace (rhasspy/piper-voices).
+#
+# Each entry maps a model filename (without .onnx) to its path suffix under
+# the base_url. The script downloads <base_url>/<suffix>/<name>.onnx.
+#
+# Browse available voices: https://huggingface.co/rhasspy/piper-voices
+# Use "medium" quality for good TTS at reasonable speed.
+# More voices = more speaker diversity = better model generalisation.
+# ---------------------------------------------------------------------------
+voices:
+  # Primary voices — used for positive clips AND same-language negative
+  # synthesis (adversarial phrases). Must match the target phrase language.
+  primary:
+    base_url: https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU
+    models:
+      ru_RU-dmitri-medium: dmitri/medium
+      ru_RU-denis-medium: denis/medium
+      ru_RU-irina-medium: irina/medium
+      ru_RU-ruslan-medium: ruslan/medium
+
+  # Secondary voices (optional) — used ONLY for cross-language negative
+  # phrases listed below (e.g. English words that sound similar to the
+  # wake word). Helps reduce false positives from TV, YouTube, podcasts.
+  # Remove this section entirely if you don't need cross-language negatives.
+  secondary:
+    base_url: https://huggingface.co/rhasspy/piper-voices/resolve/main
+    models:
+      en_US-amy-medium: en/en_US/amy/medium
+      en_US-john-medium: en/en_US/john/medium
+      en_GB-alan-medium: en/en_GB/alan/medium
+
+# ---------------------------------------------------------------------------
+# Adversarial negative phrases — words/phrases that are acoustically similar
+# to the target but should NOT trigger the model.
+#
+# These are synthesised as negative training examples. The model learns to
+# distinguish the wake word from these confusables, dramatically reducing
+# false activations.
+#
+# Tips for building a good negative list:
+#   - Include partial matches (first/last syllable of the wake word)
+#   - Include rhymes and words with the same onset consonant cluster
+#   - Include common household words, greetings, and commands
+#   - Include names of other voice assistants
+#   - Include words from other languages that sound similar (these should
+#     use Latin script and will be synthesised with secondary voices)
+#   - 50–100 phrases is a good range; more is fine
+# ---------------------------------------------------------------------------
+negative_phrases:
+  # Partial and near-matches
+  - Джар
+  - Ярвис
+  - Джарв
+  - Вис
+  # Same onset, different body
+  - Джек
+  - Джон
+  - Джим
+  - Джаз
+  - Джамал
+  # "Дж" onset words (TV/YouTube common)
+  - Джунгли
+  - Джентльмен
+  - Джинсы
+  - Джип
+  - Джокер
+  # Similar endings / rhymes
+  - Харвис
+  - Гарвис
+  - Нарвис
+  - Барвис
+  - Сервис
+  - Нервис
+  # "-вис/-ис" endings
+  - Завис
+  - Навис
+  - Повис
+  # "жа/жар" cluster
+  - Жарко
+  - Жалко
+  - Жаль
+  - Пожалуйста
+  - Пожар
+  - Жарить
+  - Уважаемый
+  # Similar-sounding proper nouns
+  - Маркус
+  - Артемис
+  - Дионис
+  - Анубис
+  - Алексис
+  # Russian assistant / device names
+  - Алиса
+  - Маруся
+  - Салют
+  - Компьютер
+  - Система
+  # Common one-word commands (false-activation sources)
+  - Привет
+  - Окей
+  - Стоп
+  - Хватит
+  - Начни
+  - Открой
+  - Вперёд
+  - Назад
+  - Помоги
+  - Хорошо
+  - Понял
+  # User-reported real-world triggers
+  - Джангл
+  - Джингл
+  - Щас
+  - Сжались
+  - Задержались
+  # Names starting with Д
+  - Дмитрий
+  - Дарья
+  - Денис
+  - Данила
+  - Диана
+  # Other two-syllable names
+  - Виктор
+  - Максим
+  - Кирилл
+  - Артём
+  - Антон
+  # Short greetings / phrases
+  - Добрый день
+  - Доброе утро
+  - Добрый вечер
+  # Commands
+  - Выключи
+  - Включи
+  - Переключи
+  # English words (TV/YouTube false-positive sources — synthesised with secondary voices)
+  - Jarring
+  - Charges
+  - Jargon
+  - Jungle
+  - Jingle
+  - Charles
+  - Largest
+  - Dangerous
+  - Gorgeous
+  - Sergeant
+
+# ---------------------------------------------------------------------------
+# microWakeWord architecture and training hyperparameters
+# ---------------------------------------------------------------------------
+microwakeword:
+  # --- Architecture ---
+  architecture: mixednet         # mixednet or inception
+  pointwise_filters: "64,64,64,64"
+  repeat_in_block: "1,1,1,1"
+  mixconv_kernel_sizes: "[5], [7,11], [9,15], [23]"
+  first_conv_filters: 32
+  first_conv_kernel_size: 5
+  stride: 3                      # temporal stride → 30ms per streaming output
+  spectrogram_length: 204        # input frames (computed: 50 final + 154 dropped by valid-padding)
+
+  # --- Training ---
+  training_steps: 20000
+  batch_size: 128
+  learning_rate: 0.001
+  positive_class_weight: 1.5
+  negative_class_weight: 1
+
+  # --- SpecAugment ---
+  time_mask_max_size: 5
+  time_mask_count: 2
+  freq_mask_max_size: 5
+  freq_mask_count: 2
+
+  # --- Output / Inference ---
+  probability_cutoff: 0.9
+  sliding_window_size: 10
