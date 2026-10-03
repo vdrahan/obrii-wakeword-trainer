@@ -78,8 +78,15 @@ info "Installing microWakeWord..."
 # Pinned to a known-good commit — microWakeWord pulls in TensorFlow and its
 # API moves between commits. Bump deliberately, then retrain + retest.
 MWW_REF="a70bd740d4e79ee8a8bb3db843fe862b88d5d6b0"
-"$PIP" install "git+https://github.com/kahrendt/microWakeWord.git@${MWW_REF}" \
-    || error "Failed to install microWakeWord. Check the GitHub repo."
+# Editable install from a clone: a regular install drops microwakeword/layers
+# and microwakeword/audio (no __init__.py, so find_packages() skips them).
+MWW_DIR="$SCRIPT_DIR/microWakeWord"
+[ -d "$MWW_DIR/.git" ] || git clone https://github.com/kahrendt/microWakeWord.git "$MWW_DIR" \
+    || error "Failed to clone microWakeWord. Check the GitHub repo."
+git -C "$MWW_DIR" fetch -q origin && git -C "$MWW_DIR" checkout -q "$MWW_REF" \
+    || error "Failed to check out microWakeWord @ ${MWW_REF}."
+"$PIP" install -e "$MWW_DIR" \
+    || error "Failed to install microWakeWord."
 
 # ---------------------------------------------------------------------------
 # 4. Install additional dependencies
@@ -126,7 +133,7 @@ import sys
 ok = True
 checks = [
     ("tensorflow",       lambda: __import__("tensorflow").__version__),
-    ("microwakeword",    lambda: __import__("microwakeword") and "ok"),
+    ("microwakeword",    lambda: __import__("microwakeword.layers.stream") and "ok"),
     ("pymicro_features", lambda: __import__("pymicro_features") and "ok"),
     ("numpy",            lambda: __import__("numpy").__version__),
     ("yaml",             lambda: __import__("yaml").__version__),
