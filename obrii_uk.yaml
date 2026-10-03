@@ -1,0 +1,95 @@
+model_name: obrii_uk
+wake_word: "Обрій"
+author: obrii
+trained_languages: ["uk"]
+version: 1
+
+train_with_recordings: false
+
+target_phrases:
+  - Обрій
+  - Обрій!
+  - Обрій?
+
+training:
+  n_samples: 10000
+  n_samples_val: 4000
+
+voices:
+  primary:
+    base_url: https://huggingface.co/rhasspy/piper-voices/resolve/main/uk/uk_UA
+    models:
+      uk_UA-mykyta-high: mykyta/high
+      uk_UA-oleksa-high: oleksa/high
+      uk_UA-tetiana-high: tetiana/high
+
+  secondary:
+    base_url: https://huggingface.co/rhasspy/piper-voices/resolve/main
+    models:
+      en_US-amy-medium: en/en_US/amy/medium
+      en_US-lessac-medium: en/en_US/lessac/medium
+
+negative_phrases:
+  # Partial / near matches
+  - Обр
+  - Обрив
+  - Образ
+  - Обране
+  # Same "Об-" onset
+  - Область
+  - Обід
+  - Оренда
+  # Rhymes / similar body-ending
+  - Відкрий
+  - Секрет
+  - Період
+  # Other voice assistant names
+  - Аліса
+  - Маруся
+  - Сірі
+  - Алекса
+  - Компʼютер
+  # Common commands (false-activation sources)
+  - Привіт
+  - Окей
+  - Стоп
+  - Досить
+  - Почни
+  - Допоможи
+  - Добре
+  - Одразу
+  # Greetings
+  - Добрий день
+  - Доброго ранку
+  - Добрий вечір
+  # English words that sound similar (Latin script → secondary voices)
+  - Aubrey
+  - O'Brien
+  - Obree
+  - Ferry
+  - Sorry
+  - Berry
+
+microwakeword:
+  architecture: mixednet
+  pointwise_filters: "64,64,64,64"
+  repeat_in_block: "1,1,1,1"
+  mixconv_kernel_sizes: "[5], [7,11], [9,15], [23]"
+  first_conv_filters: 32
+  first_conv_kernel_size: 5
+  stride: 3
+  spectrogram_length: 204
+
+  training_steps: 10000
+  batch_size: 128
+  learning_rate: 0.001
+  positive_class_weight: 1.5
+  negative_class_weight: 1
+
+  time_mask_max_size: 5
+  time_mask_count: 2
+  freq_mask_max_size: 5
+  freq_mask_count: 2
+
+  probability_cutoff: 0.9
+  sliding_window_size: 10

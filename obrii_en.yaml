@@ -1,0 +1,92 @@
+model_name: obrii_en
+wake_word: "Obrii"
+author: obrii
+trained_languages: ["en"]
+version: 1
+
+train_with_recordings: false
+
+target_phrases:
+  - Obrii
+  - Obrii!
+  - Obrii?
+
+training:
+  n_samples: 10000
+  n_samples_val: 4000
+
+voices:
+  primary:
+    base_url: https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US
+    models:
+      en_US-amy-medium: amy/medium
+      en_US-lessac-medium: lessac/medium
+      en_US-kristin-medium: kristin/medium
+
+  secondary:
+    base_url: https://huggingface.co/rhasspy/piper-voices/resolve/main/uk/uk_UA
+    models:
+      uk_UA-mykyta-high: mykyta/high
+      uk_UA-tetiana-high: tetiana/high
+
+negative_phrases:
+  # Partial / near matches
+  - Ob
+  - Obri
+  - Brii
+  - Bree
+  # Rhymes / very close sounds
+  - Aubrey
+  - Audrey
+  - Ferry
+  - Berry
+  - Very
+  - Sorry
+  # "Ob-" onset
+  - Obvious
+  - Observe
+  - Object
+  - Obtain
+  # Other voice assistant names
+  - Alexa
+  - Siri
+  - Cortana
+  - Computer
+  - Hey Google
+  # Common commands (false-activation sources)
+  - Hello
+  - Hey
+  - Stop
+  - Okay
+  - Start
+  - Open
+  - Help
+  - Good
+  # Cyrillic cross-language negatives (secondary voices)
+  - Обрив
+  - Привіт
+  - Добре
+
+microwakeword:
+  architecture: mixednet
+  pointwise_filters: "64,64,64,64"
+  repeat_in_block: "1,1,1,1"
+  mixconv_kernel_sizes: "[5], [7,11], [9,15], [23]"
+  first_conv_filters: 32
+  first_conv_kernel_size: 5
+  stride: 3
+  spectrogram_length: 204
+
+  training_steps: 10000
+  batch_size: 128
+  learning_rate: 0.001
+  positive_class_weight: 1.5
+  negative_class_weight: 1
+
+  time_mask_max_size: 5
+  time_mask_count: 2
+  freq_mask_max_size: 5
+  freq_mask_count: 2
+
+  probability_cutoff: 0.9
+  sliding_window_size: 10
