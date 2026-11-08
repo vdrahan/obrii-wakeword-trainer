@@ -1,3 +1,5 @@
+> Imported from [interkelstar/microwakeword-trainer](https://github.com/interkelstar/microwakeword-trainer) (MIT). The README below is the original author's.
+
 # microWakeWord Trainer
 
 Config-driven pipeline for training custom wake word models using the
